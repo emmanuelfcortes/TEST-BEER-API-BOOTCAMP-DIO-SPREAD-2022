@@ -144,7 +144,7 @@ public class BeerControllerTest {
         BeerDTO beerDTO = BeerDTOBuilder.builder().build().toBeerDTO();
 
         //when
-        when(beerService.listAll()).thenReturn(Collections.singletonList(beerDTO));
+        when(beerService.listAll()).thenReturn(Collections.EMPTY_LIST);
 
         // then
         mockMvc.perform(get(BEER_API_URL_PATH)

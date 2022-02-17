@@ -16,7 +16,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -27,10 +29,7 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
@@ -150,25 +149,38 @@ public class BeerServiceTest {
         // given
         BeerDTO expectedFoundBeerDTO = BeerDTOBuilder.builder().build().toBeerDTO();
         Beer expectedFoundBeer = beerMapper.toModel(expectedFoundBeerDTO);
-
+        /*My implementation to test another form*/
         //when
+        when(beerRepository.findAll()).thenReturn(List.of(expectedFoundBeer));
+
+        /*teacher implementation
         when(beerRepository.findAll()).thenReturn(Collections.singletonList(expectedFoundBeer));
+        */
 
         //then
         List<BeerDTO> foundListBeersDTO = beerService.listAll();
 
+        //junit syntax
+        assertNotEquals(foundListBeersDTO, empty());
+        assertEquals(foundListBeersDTO, List.of(expectedFoundBeerDTO));
+
+        // HAMCREST SYNTAX
         assertThat(foundListBeersDTO, is(not(empty())));
         assertThat(foundListBeersDTO.get(0), is(equalTo(expectedFoundBeerDTO)));
     }
 
     @Test
-    void whenListBeerIsCalledThenReturnAnEmptyListOfBeers() {
+    void whenListBeerWithoutBeerIsCalledThenReturnAnEmptyListOfBeers() {
         //when
         when(beerRepository.findAll()).thenReturn(Collections.EMPTY_LIST);
 
         //then
         List<BeerDTO> foundListBeersDTO = beerService.listAll();
 
+        //Junit syntax
+        assertEquals(foundListBeersDTO, Collections.EMPTY_LIST);
+
+        //Hamcrest syntax
         assertThat(foundListBeersDTO, is(empty()));
     }
 
@@ -188,6 +200,17 @@ public class BeerServiceTest {
         verify(beerRepository, times(1)).findById(expectedDeletedBeerDTO.getId());
         verify(beerRepository, times(1)).deleteById(expectedDeletedBeerDTO.getId());
     }
+    @Test
+    void whenExclusionIsCalledWithInvalidIdThenReturnBeerNotFoundException() throws BeerNotFoundException{
+        // given
+        BeerDTO expectedDeletedBeerDTO = BeerDTOBuilder.builder().build().toBeerDTO();
+        Beer expectedDeletedBeer = beerMapper.toModel(expectedDeletedBeerDTO);
+        // when
+        Mockito.when(beerRepository.findById(expectedDeletedBeerDTO.getId())).thenReturn(Optional.empty());
+
+        //then
+        assertThrows(BeerNotFoundException.class, () -> beerService.deleteById(expectedDeletedBeerDTO.getId()));
+    }
 
     @Test
     void whenIncrementIsCalledThenIncrementBeerStock() throws BeerNotFoundException, BeerStockExceededException {
@@ -204,7 +227,12 @@ public class BeerServiceTest {
 
         // then
         BeerDTO incrementedBeerDTO = beerService.increment(expectedBeerDTO.getId(), quantityToIncrement);
+        //Junit syntax
+        assertEquals(expectedQuantityAfterIncrement, incrementedBeerDTO.getQuantity());
 
+        assertThat(incrementedBeerDTO.getMax(),greaterThanOrEqualTo(expectedQuantityAfterIncrement));
+
+        // Hamcrest syntax
         assertThat(expectedQuantityAfterIncrement, equalTo(incrementedBeerDTO.getQuantity()));
         assertThat(expectedQuantityAfterIncrement, lessThan(expectedBeerDTO.getMax()));
     }
